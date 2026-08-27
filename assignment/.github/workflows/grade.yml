@@ -1,0 +1,58 @@
+name: Grade
+
+# Runs on every push. Produces SCORECARD.md with per-ticket feedback,
+# because "6/10" does not teach anything and "reorder corrupts state —
+# check your key" does.
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  grade:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # A red type error means the rest cannot be trusted, so it is
+      # reported but does not abort — a student should still see which
+      # tickets passed.
+      - name: Type check
+        id: types
+        continue-on-error: true
+        run: npm run check-types
+
+      - name: Unit tests
+        id: unit
+        continue-on-error: true
+        run: npm test -- --reporter=json --outputFile=.results/unit.json
+
+      - run: npx playwright install --with-deps chromium
+      - name: Behaviour tests
+        id: e2e
+        continue-on-error: true
+        run: npm run test:e2e -- --reporter=json > .results/e2e.json
+
+      - name: Build scorecard
+        run: node scripts/scorecard.mjs
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: test-results/
+
+      - name: Commit scorecard
+        run: |
+          git config user.name  "fellowship-grader"
+          git config user.email "grader@temploracraft.com"
+          git add SCORECARD.md
+          git diff --staged --quiet || git commit -m "chore: update scorecard [skip ci]"
+          git push
