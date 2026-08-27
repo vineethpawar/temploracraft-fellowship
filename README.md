@@ -1,13 +1,5 @@
 # temploracraft Fellowship
 
-React, taught in two days, with a graded assignment and a route to an
-internship at the end.
-
-Everything in the room runs in the browser. **No installs, no accounts,
-no "works on my machine".** Click a link, it opens, you fix something.
-
----
-
 ## The exercises
 
 Eight minutes each. Open the link, read the comment at the top of
